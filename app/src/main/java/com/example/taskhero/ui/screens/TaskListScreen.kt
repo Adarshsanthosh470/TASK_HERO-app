@@ -13,16 +13,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.taskhero.data.Task
 import com.example.taskhero.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun TaskListScreen(navController: NavController, viewModel: TaskViewModel) {
+fun TaskListScreen(navController: NavController, viewModel: TaskViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
+    val activeTasksCount by viewModel.activeTasksCount.collectAsState()
+    val completedTasksCount by viewModel.completedTasksCount.collectAsState()
 
     if (showDeleteDialog && taskToDelete != null) {
         AlertDialog(
@@ -32,7 +35,7 @@ fun TaskListScreen(navController: NavController, viewModel: TaskViewModel) {
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.deleteTask(taskToDelete!!.id)
+                        viewModel.deleteTask(taskToDelete!!)
                         showDeleteDialog = false
                     }
                 ) {
@@ -83,7 +86,7 @@ fun TaskListScreen(navController: NavController, viewModel: TaskViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(text = "Active", color = LightText)
-                        Text(text = viewModel.activeTasksCount.toString(), color = LightText)
+                        Text(text = activeTasksCount.toString(), color = LightText)
                     }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -96,7 +99,7 @@ fun TaskListScreen(navController: NavController, viewModel: TaskViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(text = "Completed", color = LightText)
-                        Text(text = viewModel.completedTasksCount.toString(), color = LightText)
+                        Text(text = completedTasksCount.toString(), color = LightText)
                     }
                 }
             }
@@ -118,7 +121,7 @@ fun TaskListScreen(navController: NavController, viewModel: TaskViewModel) {
                     ) {
                         Checkbox(
                             checked = task.isCompleted,
-                            onCheckedChange = { viewModel.toggleTaskCompletion(task.id) },
+                            onCheckedChange = { viewModel.toggleTaskCompletion(task) },
                             colors = CheckboxDefaults.colors(checkmarkColor = LightText, checkedColor = Blue)
                         )
                         Spacer(modifier = Modifier.width(8.dp))

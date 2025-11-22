@@ -1,69 +1,72 @@
 package com.example.taskhero.ui.screens
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.taskhero.data.Task
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.taskhero.data.TaskDao
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Inject
 
 data class TaskUiState(
     val tasks: List<Task> = emptyList()
 )
 
-class TaskViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(TaskUiState())
-    val uiState: StateFlow<TaskUiState> = _uiState.asStateFlow()
+@HiltViewModel
+class TaskViewModel @Inject constructor(private val taskDao: TaskDao) : ViewModel() {
+
+    val uiState: StateFlow<TaskUiState> = taskDao.getAllTasks().map { TaskUiState(it) }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = TaskUiState()
+    )
 
     fun addTask(name: String, description: String) {
-        val newTask = Task(name = name, description = description)
-        _uiState.update { currentState ->
-            currentState.copy(
-                tasks = currentState.tasks + newTask
-            )
+        viewModelScope.launch {
+            taskDao.insertTask(Task(name = name, description = description))
         }
     }
 
-    fun toggleTaskCompletion(taskId: UUID) {
-        _uiState.update { currentState ->
-            val updatedTasks = currentState.tasks.map { task ->
-                if (task.id == taskId) {
-                    task.copy(isCompleted = !task.isCompleted)
-                } else {
-                    task
-                }
-            }
-            currentState.copy(tasks = updatedTasks)
+    fun toggleTaskCompletion(task: Task) {
+        viewModelScope.launch {
+            taskDao.updateTask(task.copy(isCompleted = !task.isCompleted))
         }
     }
 
-    fun deleteTask(taskId: UUID) {
-        _uiState.update { currentState ->
-            currentState.copy(tasks = currentState.tasks.filterNot { it.id == taskId })
+    fun deleteTask(task: Task) {
+        viewModelScope.launch {
+            taskDao.deleteTask(task)
         }
     }
 
     fun updateTask(taskId: UUID, name: String, description: String) {
-        _uiState.update { currentState ->
-            val updatedTasks = currentState.tasks.map {
-                if (it.id == taskId) {
-                    it.copy(name = name, description = description)
-                } else {
-                    it
-                }
-            }
-            currentState.copy(tasks = updatedTasks)
+        viewModelScope.launch {
+            taskDao.updateTask(Task(id = taskId, name = name, description = description))
         }
     }
 
-    fun getTask(taskId: UUID): Task? {
-        return _uiState.value.tasks.find { it.id == taskId }
+    fun getTask(taskId: UUID): StateFlow<Task> {
+        return taskDao.getTaskById(taskId).stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Task(name = "", description = "")
+        )
     }
 
-    val activeTasksCount: Int
-        get() = _uiState.value.tasks.count { !it.isCompleted }
+    val activeTasksCount: StateFlow<Int> = taskDao.getAllTasks().map { tasks -> tasks.count { !it.isCompleted } }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
 
-    val completedTasksCount: Int
-        get() = _uiState.value.tasks.count { it.isCompleted }
+    val completedTasksCount: StateFlow<Int> = taskDao.getAllTasks().map { tasks -> tasks.count { it.isCompleted } }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
 }

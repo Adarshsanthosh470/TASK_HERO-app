@@ -7,34 +7,38 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.taskhero.data.Transaction
 import com.example.taskhero.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreditDetailScreen(personId: String?, viewModel: CreditViewModel, navController: NavController) {
+fun CreditDetailScreen(personId: String?, viewModel: CreditViewModel = hiltViewModel(), navController: NavController) {
     val personUuid = try {
         UUID.fromString(personId)
     } catch (e: Exception) {
         null
     }
 
-    val person = personUuid?.let { viewModel.getPerson(it) }
+    val personWithTransactions by personUuid?.let { viewModel.getPersonWithTransactions(it) }?.collectAsState(initial = null) ?: return
 
     Scaffold(
         containerColor = BlackBackground,
         floatingActionButton = {
-            if (person != null) {
+            if (personWithTransactions != null) {
                 FloatingActionButton(
-                    onClick = { navController.navigate("add_transaction/${person.id}") },
+                    onClick = { navController.navigate("add_transaction/${personWithTransactions!!.person.id}") },
                     containerColor = Blue
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = "Add Transaction", tint = LightText)
@@ -48,9 +52,9 @@ fun CreditDetailScreen(personId: String?, viewModel: CreditViewModel, navControl
                 .padding(it)
                 .padding(16.dp)
         ) {
-            if (person != null) {
+            if (personWithTransactions != null) {
                 Text(
-                    text = person.name,
+                    text = personWithTransactions!!.person.name,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp),
@@ -68,8 +72,8 @@ fun CreditDetailScreen(personId: String?, viewModel: CreditViewModel, navControl
                     ) {
                         Text(text = "Total Balance", color = LightText)
                         Text(
-                            text = "₹${String.format("%.2f", person.totalBalance)}",
-                            color = if (person.totalBalance >= 0) Color.Green else Red,
+                            text = "₹${String.format("%.2f", personWithTransactions!!.totalBalance)}",
+                            color = if (personWithTransactions!!.totalBalance >= 0) Color.Green else Red,
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -77,7 +81,7 @@ fun CreditDetailScreen(personId: String?, viewModel: CreditViewModel, navControl
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(person.transactions) { transaction ->
+                    items(personWithTransactions!!.transactions) { transaction ->
                         TransactionRow(transaction = transaction)
                     }
                 }

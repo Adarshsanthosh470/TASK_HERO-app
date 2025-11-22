@@ -26,7 +26,9 @@ import com.example.taskhero.ui.theme.BlackBackground
 import com.example.taskhero.ui.theme.Blue
 import com.example.taskhero.ui.theme.LightText
 import com.example.taskhero.ui.theme.TaskHeroTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

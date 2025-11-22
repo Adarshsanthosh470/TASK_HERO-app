@@ -16,13 +16,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.taskhero.data.CreditPerson
+import com.example.taskhero.data.PersonWithTransactions
 import com.example.taskhero.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreditBookScreen(navController: NavController, viewModel: CreditViewModel) {
+fun CreditBookScreen(navController: NavController, viewModel: CreditViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    val totalBalance by viewModel.totalBalance.collectAsState()
 
     Scaffold(
         containerColor = BlackBackground,
@@ -60,8 +63,8 @@ fun CreditBookScreen(navController: NavController, viewModel: CreditViewModel) {
                 ) {
                     Text(text = "Total Balance", color = LightText)
                     Text(
-                        text = "₹${String.format("%.2f", viewModel.totalBalance)}",
-                        color = if (viewModel.totalBalance >= 0) Color.Green else Red,
+                        text = "₹${String.format("%.2f", totalBalance)}",
+                        color = if (totalBalance >= 0) Color.Green else Red,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -69,8 +72,8 @@ fun CreditBookScreen(navController: NavController, viewModel: CreditViewModel) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(uiState.people) { person ->
-                    CreditPersonRow(person = person, navController = navController)
+                items(uiState.people) { personWithTransactions ->
+                    CreditPersonRow(personWithTransactions = personWithTransactions, navController = navController)
                 }
             }
         }
@@ -78,11 +81,11 @@ fun CreditBookScreen(navController: NavController, viewModel: CreditViewModel) {
 }
 
 @Composable
-fun CreditPersonRow(person: CreditPerson, navController: NavController) {
+fun CreditPersonRow(personWithTransactions: PersonWithTransactions, navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { navController.navigate("credit_detail/${person.id}") },
+            .clickable { navController.navigate("credit_detail/${personWithTransactions.person.id}") },
         colors = CardDefaults.cardColors(containerColor = DarkGrey)
     ) {
         Row(
@@ -92,10 +95,10 @@ fun CreditPersonRow(person: CreditPerson, navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = person.name, fontWeight = FontWeight.Bold, color = LightText)
+            Text(text = personWithTransactions.person.name, fontWeight = FontWeight.Bold, color = LightText)
             Text(
-                text = "₹${String.format("%.2f", person.totalBalance)}",
-                color = if (person.totalBalance >= 0) Color.Green else Red,
+                text = "₹${String.format("%.2f", personWithTransactions.totalBalance)}",
+                color = if (personWithTransactions.totalBalance >= 0) Color.Green else Red,
                 fontWeight = FontWeight.Bold
             )
         }

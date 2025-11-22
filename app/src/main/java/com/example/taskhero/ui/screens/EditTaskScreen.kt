@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.taskhero.ui.theme.BlackBackground
 import com.example.taskhero.ui.theme.Blue
@@ -17,17 +18,17 @@ import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditTaskScreen(navController: NavController, viewModel: TaskViewModel, taskId: String?) {
+fun EditTaskScreen(navController: NavController, viewModel: TaskViewModel = hiltViewModel(), taskId: String?) {
     val taskUuid = try {
         UUID.fromString(taskId)
     } catch (e: Exception) {
         null
     }
 
-    val task = taskUuid?.let { viewModel.getTask(it) }
+    val task by taskUuid?.let { viewModel.getTask(it) }?.collectAsState() ?: remember { mutableStateOf(null) }
 
-    var name by remember { mutableStateOf(task?.name ?: "") }
-    var description by remember { mutableStateOf(task?.description ?: "") }
+    var name by remember(task) { mutableStateOf(task?.name ?: "") }
+    var description by remember(task) { mutableStateOf(task?.description ?: "") }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog && task != null) {
@@ -38,7 +39,7 @@ fun EditTaskScreen(navController: NavController, viewModel: TaskViewModel, taskI
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.deleteTask(task.id)
+                        viewModel.deleteTask(task!!)
                         navController.popBackStack()
                     }
                 ) {
@@ -70,7 +71,7 @@ fun EditTaskScreen(navController: NavController, viewModel: TaskViewModel, taskI
             FloatingActionButton(
                 onClick = {
                     if (task != null) {
-                        viewModel.updateTask(task.id, name, description)
+                        viewModel.updateTask(task!!.id, name, description)
                         navController.popBackStack()
                     }
                 },
